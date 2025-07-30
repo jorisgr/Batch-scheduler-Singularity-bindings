@@ -18,11 +18,23 @@ singularity --version || { echo Singularity not found... exiting.; exit; }
 ORIGINAL_SINGULARITY_COMMAND="$@" # Optional.
 echo Will execute: ${ORIGINAL_SINGULARITY_COMMAND}
 
-for SINGULARITY_ARG in "$@"; do
- case $SINGULARITY_ARG in *.sif) IMAGE="$SINGULARITY_ARG";; esac
-done
+# Get the last argument as the image/sandbox path
+IMAGE="${!#}"
 
-if [[ -z "$IMAGE" ]]; then echo "No *.sif image location found. Exiting..."; exit; fi
+# Verify it's a valid .sif file or sandbox directory
+if [[ "$IMAGE" == *.sif ]]; then
+    # Check if .sif file exists
+    if [[ ! -f "$IMAGE" ]]; then
+        echo "SIF file '$IMAGE' not found. Exiting..."; 
+        exit 1; 
+    fi
+elif [[ -d "$IMAGE" ]]; then
+    # It's a directory (sandbox)
+    echo "Using sandbox directory: $IMAGE"
+else
+    echo "Last argument '$IMAGE' is not a valid .sif file or sandbox directory. Exiting..."; 
+    exit 1; 
+fi
 
 echo Enable host SLURM user for: ${IMAGE}
 
@@ -73,6 +85,10 @@ fi
 
 SINGULARITY_BIND=${SCHEDULER_COMMANDS},${SCHEDULER_SYSTEM_SPECS}
 SINGULARITY_BIND=${SINGULARITY_BIND},${MERGED_PASSWD_GROUP}
+
+# Add DNS resolution files for SLURM service discovery probably not necessary
+# SINGULARITY_BIND=${SINGULARITY_BIND},/etc/resolv.conf,/etc/hosts
+
 export SINGULARITY_BIND
 
 echo SINGULARITY_BIND: "${SINGULARITY_BIND}"
