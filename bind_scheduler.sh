@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Get system-specific bindings to use.
 CONFIG=scheduler-bindings.conf
-source ${CONFIG} || { echo ${CONFIG} not found. Make sure to correctly link or create it: "ln -sf <machine>.conf scheduler-bindings.conf"; exit; }
-echo Will use: $(readlink scheduler-bindings.conf)
+CONFIG_PATH="${SCRIPT_DIR}/${CONFIG}"
+source ${CONFIG_PATH} || { echo ${CONFIG} not found. Make sure to correctly link or create it: "ln -sf <machine>.conf scheduler-bindings.conf"; exit; }
+echo Will use: $(readlink "${CONFIG_PATH}")
 
 # Print host system information relevant for debugging.
 echo linux kernel $(uname --kernel-release) || {}
