@@ -18,8 +18,42 @@ singularity --version || { echo Singularity not found... exiting.; exit; }
 ORIGINAL_SINGULARITY_COMMAND="$@" # Optional.
 echo Will execute: ${ORIGINAL_SINGULARITY_COMMAND}
 
-# Get the last argument as the image/sandbox path
-IMAGE="${!#}"
+# Parse Singularity command to find the image/sandbox
+IMAGE=""
+FOUND_SUBCOMMAND=false
+SKIP_NEXT=false
+
+for arg in "$@"; do
+    if [[ "$SKIP_NEXT" == true ]]; then
+        SKIP_NEXT=false
+        continue
+    fi
+    
+    # Skip singularity binary and flags
+    if [[ "$arg" == "singularity" ]]; then
+        continue
+    elif [[ "$arg" == --* ]]; then
+        # Check if this flag takes a value
+        if [[ "$arg" == "--bind" || "$arg" == "--env-file" || "$arg" == "--cwd" ]]; then
+            SKIP_NEXT=true
+        fi
+        continue
+    elif [[ "$arg" == -* ]]; then
+        continue
+    fi
+    
+    # If we haven't found a subcommand yet, this is it
+    if [[ "$FOUND_SUBCOMMAND" == false ]]; then
+        FOUND_SUBCOMMAND=true
+        continue
+    fi
+    
+    # Next non-flag argument after subcommand should be the image
+    if [[ -f "$arg" || -d "$arg" ]]; then
+        IMAGE="$arg"
+        break
+    fi
+done
 
 # Verify it's a valid .sif file or sandbox directory
 if [[ "$IMAGE" == *.sif ]]; then
